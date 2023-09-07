@@ -56,6 +56,7 @@ def routeDistance(group, cities):
 
     for route in group:
         distance = 0
+        first_gen = []
         
         for city in route:
             
@@ -72,7 +73,37 @@ def routeDistance(group, cities):
         route_and_distance.append([route, distance])
         
     route_and_distance.sort(key = lambda x: x[1])
+    
+    for route in route_and_distance:
+        first_gen.append(route[0])
+    
         
+    return first_gen
+
+def finalDistance(group, cities):
+
+    route_and_distance = []
+
+    for route in group:
+        distance = 0
+        first_gen = []
+        
+        for city in route:
+            
+            # Find the current city and next cities position
+            city_1 = cities[city]
+            # If you are at the last item in the list, make the next city the starting city
+            if route.index(city) + 1 != len(route):
+                city_2 = cities[route[(route.index(city)) + 1]]
+            else:
+                city_2 = cities[0]
+                
+            distance += sqrt(((city_2[0] - city_1[0]) ** 2) + ((city_2[1] - city_1[1]) ** 2))
+            
+        route_and_distance.append([route, distance])
+        
+    route_and_distance.sort(key = lambda x: x[1])
+    
     return route_and_distance
 
 def repopulate(r_and_d):
@@ -80,16 +111,17 @@ def repopulate(r_and_d):
     # Cutting the list in half, only keeping the top 50% of answers
     cut_list = r_and_d[:len(r_and_d)//2]
     new_routes = []
+    new_routes += r_and_d
     
     for route in range((len(r_and_d) // 2)):
         
         # Chosing 2 random parents
-        parent_1 = cut_list[random.randint(0, len(cut_list) - 1)][0]
-        parent_2 = cut_list[random.randint(0, len(cut_list) - 1)][0]
+        parent_1 = cut_list[random.randint(0, len(cut_list) - 1)]
+        parent_2 = cut_list[random.randint(0, len(cut_list) - 1)]
         
         # Preventing the parents from being the same
         while parent_2 == parent_1:
-            parent_2 = cut_list[random.randint(0, len(cut_list) - 1)][0]
+            parent_2 = cut_list[random.randint(0, len(cut_list) - 1)]
         
         # Splicing the parents genes in half and crossing them over to form 2 new children
         child_1 = []
@@ -103,13 +135,7 @@ def repopulate(r_and_d):
         new_routes.append(child_1)
         new_routes.append(child_2)
         
-    new_generation = []
-    for routes in r_and_d:
-        new_generation.append(routes[0])
-        
-    new_generation += new_routes
-    
-    for route in new_generation:
+    for route in new_routes:
         
         # 10% change to randomly swap two cities in the route to add random mutatation to the gene pool
         for city in route:
@@ -119,16 +145,16 @@ def repopulate(r_and_d):
                 
                 route[pos_1], route[pos_2] = route[pos_2], route[pos_1]
         
-    return new_generation
+    return new_routes
 
 if __name__ == '__main__':
     group, cities = generate()
-    current_generation = routeDistance(group, cities)
-    
+    generation = routeDistance(group, cities)
+    current_generation = repopulate(generation)
+
     i = 0
-    while i < 200:
-        
-        repopulate(current_generation)
+    while i < 10:
         current_generation = repopulate(current_generation)
-        
         i += 1
+        
+    print(finalDistance([current_generation[0]], cities))
