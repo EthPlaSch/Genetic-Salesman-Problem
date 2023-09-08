@@ -3,14 +3,17 @@ from math import sqrt
 from tkinter import *
 cities = []
 
-def generate():
+num_gen = int(input('Number of Generations: '))
+population_size = int(input('Population Size: '))
+num_cities = int(input('Number of Cities (10 to 20): '))
+
+def generate(pop_size, num_cities):
     # Creating an inital city sizs of 10
-    for i in range(10):
+    for i in range(num_cities):
         city = [random.randint(1, 100), random.randint(1, 100)]
         
         # Making sure we have unique set of cities
         while city in cities:
-            print('Repeat city, trying again')
             city = [random.randint(1, 100), random.randint(1, 100)]
             
         cities.append(city)
@@ -24,7 +27,7 @@ def generate():
     current_generation = []
 
     # Generating a bunch of random solutions (the intial population)
-    for i in range(200):
+    for i in range(pop_size):
         route = []
 
         # Generating a route
@@ -33,16 +36,15 @@ def generate():
             route.append(val)
             city_numbers.remove(val)
         
-        # Avoiding any repeat routes when creating the inital population
-        while route in current_generation:
+        # # Avoiding any repeat routes when creating the inital population
+        # while route in current_generation:
 
-            # Generating a route
-            for i in range(len(city_numbers)):
-                val = random.choice(city_numbers)
-                route.append(val)
-                city_numbers.remove(val)
-                
-            print('Stuck at while 2')
+        #     # Generating a route
+        #     for i in range(len(city_numbers)):
+        #         val = random.choice(city_numbers)
+        #         route.append(val)
+        #         city_numbers.remove(val)
+
         
         # Adding the route to our list of intial population routes    
         current_generation.append(route)    
@@ -59,6 +61,7 @@ def calculateRouteDistance(group, cities):
 
     for route in group:
         distance = 0
+        average_line_len = 0
         first_gen = []
         
         for city in route:
@@ -72,10 +75,16 @@ def calculateRouteDistance(group, cities):
                 city_2 = cities[0]
                 
             distance += sqrt(((city_2[0] - city_1[0]) ** 2) + ((city_2[1] - city_1[1]) ** 2))
+            average_line_len += sqrt(((city_2[0] - city_1[0]) ** 2) + ((city_2[1] - city_1[1]) ** 2))
+         
+        average_line_len = average_line_len / len(route)
             
-        route_and_distance.append([route, distance])
+        route_and_distance.append([route, average_line_len, distance])
         
     route_and_distance.sort(key = lambda x: x[1])
+    route_and_distance.sort(key = lambda x: x[2])
+    
+    #print(f'Route, Score and Distance: {route_and_distance}\n')
     
     for route in route_and_distance:
         first_gen.append(route[0])
@@ -103,19 +112,29 @@ def repopulate(r_and_d):
     new_routes = []
     new_routes += cut_list
     
-    for route in range((len(cut_list) // 2)):
+    parent_1 = cut_list[0]
+    parent_2 = cut_list[1]
+    
+    # Splicing the parents genes in half and crossing them over to form 2 new children
+    child_1 = crossOver(parent_1, parent_2)
+    child_2 = crossOver(parent_1, parent_2)
+        
+    # Adding the children to a list of new children
+    new_routes.append(child_1)
+    new_routes.append(child_2)
+    
+    for route in range(((len(cut_list) // 2) - 1)):
         
         # Chosing 2 random parents
-        parent_1 = cut_list[random.randint(0, len(cut_list) - 1)]
-        parent_2 = cut_list[random.randint(0, len(cut_list) - 1)]
-        
-        i = 0
-        # Preventing the parents from being the same
-        while parent_2 == parent_1 and i < 100:
-            parent_2 = cut_list[random.randint(0, len(cut_list) - 1)]
-            print('Stuck at while 3')
-            print(f'I: {i}')
-            i += 1
+        len_cut_list = len(cut_list)
+        p1_num = random.randint(0, len_cut_list - 1)
+        p2_num = random.randint(0, len_cut_list - 1)
+        count = 0
+        while p1_num == p2_num and count < 10:
+            p2_num = random.randint(0, len_cut_list - 1)
+            count += 1
+        parent_1 = cut_list[p1_num]
+        parent_2 = cut_list[p2_num]
         
         # Splicing the parents genes in half and crossing them over to form 2 new children
         child_1 = crossOver(parent_1, parent_2)
@@ -125,15 +144,16 @@ def repopulate(r_and_d):
         new_routes.append(child_1)
         new_routes.append(child_2)
         
-    for route in new_routes:
-        if new_routes.index(route) != 0:
-            # 10% change to randomly swap two cities in the route to add random mutatation to the gene pool
-            for city in route:
-                if 1 == random.randint(0, 4):
-                    pos_1 = random.randint(0, len(route) - 1)
-                    pos_2 = random.randint(0, len(route) - 1)
-                    
-                    route[pos_1], route[pos_2] = route[pos_2], route[pos_1]
+    for idx, route in enumerate(new_routes):
+        if idx == 0:
+            continue
+        # 10% change to randomly swap two cities in the route to add random mutatation to the gene pool
+        for city in route:
+            if 1 == random.randint(0, 10):
+                pos_1 = random.randint(0, len(route) - 1)
+                pos_2 = random.randint(0, len(route) - 1)
+                
+                route[pos_1], route[pos_2] = route[pos_2], route[pos_1]
         
     return new_routes
 
@@ -145,9 +165,14 @@ def displayResults(solution, cities):
     window.configure(bg = '#46425e')
     window.resizable(False, False)
     
-    print(solution)
+    route = str(solution[0][0])
     
-    distance = int(solution[1])
+    for i in range(1, len(solution[0])):
+        route += f', {str(solution[0][i])}'
+    
+    print(f"Route: {route.strip()} | Distance: {int(solution[2])}")
+    
+    distance = int(solution[2])
     
     label = Label(window, text = f'Distance: {distance}', font = ('aharoni', 30), bg = '#46425e', fg = '#e5e5e5', borderwidth = 0)
     label.pack()
@@ -175,13 +200,16 @@ def displayResults(solution, cities):
     window.mainloop()
     
 if __name__ == '__main__':
-    group, cities = generate()
-    generation, gen_plus_distances = calculateRouteDistance(group, cities)
+    group, cities = generate(population_size, num_cities)
+    
+    print('Simulating Evolution...')
+    generation, route_score_distance = calculateRouteDistance(group, cities)
 
     i = 0
-    while i < 100:
-        current_generation_distances, gen_plus_distances = calculateRouteDistance(generation, cities)
+    while i < num_gen:
+        current_generation_distances, route_score_distance = calculateRouteDistance(generation, cities)
         generation = repopulate(current_generation_distances)
         i += 1
 
-    displayResults(gen_plus_distances[0], cities)
+    print('Done!')
+    displayResults(route_score_distance[0], cities)
