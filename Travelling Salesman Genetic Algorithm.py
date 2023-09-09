@@ -5,7 +5,7 @@ cities = []
 
 num_gen = int(input('Number of Generations: '))
 population_size = int(input('Population Size: '))
-num_cities = int(input('Number of Cities (10 to 20): '))
+num_cities = int(input('Number of Cities (1 to 20): '))
 
 def generate(pop_size, num_cities):
     # Creating an inital city sizs of 10
