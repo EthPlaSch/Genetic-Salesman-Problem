@@ -5,7 +5,7 @@ cities = []
 
 num_gen = int(input('Number of Generations: '))
 population_size = int(input('Population Size: '))
-num_cities = int(input('Number of Cities (1 to 20): '))
+num_cities = int(input('Number of Cities (10 to 20): '))
 
 def generate(pop_size, num_cities):
     # Creating an inital city sizs of 10
@@ -75,17 +75,16 @@ def calculateRouteDistance(group, cities):
                 city_2 = cities[0]
                 
             distance += sqrt(((city_2[0] - city_1[0]) ** 2) + ((city_2[1] - city_1[1]) ** 2))
-            average_line_len += sqrt(((city_2[0] - city_1[0]) ** 2) + ((city_2[1] - city_1[1]) ** 2))
+            average_line_len += sqrt(((city_2[0] - city_1[0]) ** 2) + ((city_2[1] - city_1[1]) ** 2)) ** 2
          
         average_line_len = average_line_len / len(route)
             
         route_and_distance.append([route, average_line_len, distance])
-        
+       
+    # Sorting the list be shortest average length, then distance (to prioritise distance)    
     route_and_distance.sort(key = lambda x: x[1])
     route_and_distance.sort(key = lambda x: x[2])
-    
-    #print(f'Route, Score and Distance: {route_and_distance}\n')
-    
+
     for route in route_and_distance:
         first_gen.append(route[0])
     
@@ -93,12 +92,15 @@ def calculateRouteDistance(group, cities):
   
 def crossOver(parent_1, parent_2):
     
+    # Picking a random start and end point of the first parents genes
     start = random.randint(0, len(parent_1) // 2)   
     end = random.randint(start + 1, len(parent_1))
     slicer = slice(start, end)     
     
+    # Making that section the child
     new_order = parent_1[slicer]
     
+    # Filling up the missing cities with parent 2's genes
     for number in parent_2:
         if number not in new_order:
             new_order.append(number)
@@ -170,10 +172,12 @@ def displayResults(solution, cities):
     for i in range(1, len(solution[0])):
         route += f', {str(solution[0][i])}'
     
-    print(f"Route: {route.strip()} | Distance: {int(solution[2])}")
+    # Printing the final route, average line length of the route, and the final distance of the route
+    print(f"Route: {route.strip()} | Average Line Length: {int(sqrt(solution[1]))} | Distance: {int(solution[2])}")
     
     distance = int(solution[2])
     
+    # Creating the visual display
     label = Label(window, text = f'Distance: {distance}', font = ('aharoni', 30), bg = '#46425e', fg = '#e5e5e5', borderwidth = 0)
     label.pack()
     
@@ -182,6 +186,7 @@ def displayResults(solution, cities):
     
     solution = solution[0]
     
+    # Adding the cities and route lines to the visual display
     for city in solution:
         
         #print(f'City: {city[0]}')
@@ -207,9 +212,19 @@ if __name__ == '__main__':
 
     i = 0
     while i < num_gen:
+        #Setting the current best
+        current_best = route_score_distance[0]
+        
         current_generation_distances, route_score_distance = calculateRouteDistance(generation, cities)
+        
+        # Only printing the route if it is better than the current best
+        if current_best != route_score_distance[0]:
+            print(f'Route: {route_score_distance[0][0]} | Average Line Length: {int(sqrt(route_score_distance[0][1]))} | Distance: {int(route_score_distance[0][2])}')
+            
         generation = repopulate(current_generation_distances)
+        
         i += 1
 
+    # Displaying Results
     print('Done!')
     displayResults(route_score_distance[0], cities)
